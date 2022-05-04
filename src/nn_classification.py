@@ -1,10 +1,16 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.model_selection import GridSearchCV
 import warnings
+
+
+RANDOM_STATE = 42
+
+
 warnings.filterwarnings("ignore")
 
 
@@ -15,13 +21,13 @@ def reduce_dimension(features, n_components):
     :return: Data with reduced dimensionality. Shape: (n_samples, n_components)
     """
 
-    # pca = # TODO # Create an instance of PCA from sklearn.decomposition (already imported). 
+    pca = PCA(n_components, random_state=RANDOM_STATE)
+    X_reduced = pca.fit_transform(features)
 
-    X_reduced = np.zeros((features.shape[0], n_components)) # TODO # Fit the model with features, and apply the transformation on the features.
-
-    explained_var = 0 # TODO: # Calculate the percentage of variance explained
+    explained_var = np.sum(pca.explained_variance_ratio_)
     print(f'Explained variance: {explained_var}')
     return X_reduced
+
 
 def train_nn(features, targets):
     """
@@ -31,17 +37,25 @@ def train_nn(features, targets):
     :param targets:
     :return:
     """
+
     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=33)
 
-    n_hidden_neurons = 2 # TODO create a list
-    # TODO create an instance of MLPClassifier from sklearn.neural_network (already imported).
-    # Set parameters (some of them are specified in the HW2 sheet).
+    n_hidden_neurons = [5, 100, 200]
 
-    train_acc = 0 # TODO
-    test_acc = 0 # TODO
-    loss = 0 # TODO
-    print(f'Train accuracy: {train_acc:.4f}. Test accuracy: {test_acc:.4f}')
-    print(f'Loss: {loss:.4f}')
+    for num_neurons in n_hidden_neurons:
+        print(f'MLP - num of hidden neurons {num_neurons}:')
+        mlp = MLPClassifier(max_iter=500, random_state=0, hidden_layer_sizes=num_neurons)
+        mlp.fit(X_train, y_train)
+
+        train_acc = mlp.score(X_train, y_train)
+        test_acc = mlp.score(X_test, y_test)
+        loss = mlp.loss_
+
+        print(f'Train accuracy: {train_acc:.4f}. Test accuracy: {test_acc:.4f}')
+        print(f'Loss: {loss:.4f}')
+        print(f'Num training epochs: {mlp.n_iter_}')
+        print('---------------------------------------------------------------')
+
 
 def train_nn_with_regularization(features, targets):
     """
@@ -51,15 +65,27 @@ def train_nn_with_regularization(features, targets):
     :param targets:
     :return:
     """
+
     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=33)
 
-    # Copy your code from train_nn, but experiment now with regularization (alpha, early_stopping).
+    alpha = [1.0, 1e-4, 1.0]
+    early_stopping = [False, True, True]
+    n_hidden_neurons = [5, 100, 200]
 
-    train_acc = 0 # TODO
-    test_acc =  0 # TODO
-    loss =  0 # TODO
-    print(f'Train accuracy: {train_acc:.4f}. Test accuracy: {test_acc:.4f}')
-    print(f'Loss: {loss:.4f}')
+    for model_number in range(len(n_hidden_neurons)):
+        for hyperparameter_number in range(len(alpha)):
+            print(f'MLP - num hidden = {n_hidden_neurons[model_number]}, alpha = {alpha[hyperparameter_number]}, early_stopping = {early_stopping[hyperparameter_number]}:')
+            mlp = MLPClassifier(max_iter=500, random_state=0, hidden_layer_sizes=n_hidden_neurons[model_number], alpha=alpha[hyperparameter_number], early_stopping=early_stopping[hyperparameter_number])
+            mlp.fit(X_train, y_train)
+
+            train_acc = mlp.score(X_train, y_train)
+            test_acc = mlp.score(X_test, y_test)
+            loss = mlp.loss_
+
+            print(f'Train accuracy: {train_acc:.4f}. Test accuracy: {test_acc:.4f}')
+            print(f'Loss: {loss:.4f}')
+            print(f'Num training epochs: {mlp.n_iter_}')
+            print('---------------------------------------------------------------')
 
 
 def train_nn_with_different_seeds(features, targets):
@@ -72,35 +98,56 @@ def train_nn_with_different_seeds(features, targets):
     :param targets:
     :return:
     """
+
     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=33)
-    seeds = [0] # TODO create a list of different seeds of your choice
+
+    seeds = [8, 43, 18, 64, 97]
+    alpha = 1.0
+    early_stopping = False
+    n_hidden_neurons = 200
 
     train_acc_arr = np.zeros(len(seeds))
     test_acc_arr = np.zeros(len(seeds))
+    train_losses = np.zeros(len(seeds))
+    loss_curves = []
+    test_predictions = []
 
-    # TODO create an instance of MLPClassifier, check the perfomance for different seeds
+    for seed_number in range(len(seeds)):
+        print(f'MLP - num hidden = {n_hidden_neurons}, alpha = {alpha}, early_stopping = {early_stopping}, seed = {seeds[seed_number]}:')
+        mlp = MLPClassifier(max_iter=500, random_state=seeds[seed_number], hidden_layer_sizes=n_hidden_neurons, alpha=alpha, early_stopping=early_stopping)
+        mlp.fit(X_train, y_train)
 
-    train_acc = 0 # TODO 
-    test_acc =  0 # TODO for each seed
-    loss =  0 # TODO for each seed
-    print(f'Train accuracy: {train_acc:.4f}. Test accuracy: {test_acc:.4f}')
-    print(f'Loss: {loss:.4f}')
+        loss_curves.append(mlp.loss_curve_)
+        test_predictions.append(mlp.predict(X_test))
+        train_acc_arr[seed_number] = mlp.score(X_train, y_train)
+        test_acc_arr[seed_number] = mlp.score(X_test, y_test)
+        train_losses[seed_number] = mlp.loss_
 
+        print(f'Train accuracy: {train_acc_arr[seed_number]:.4f}. Test accuracy: {test_acc_arr[seed_number]:.4f}')
+        print(f'Loss: {train_losses[seed_number]:.4f}')
+        print(f'Num training epochs: {mlp.n_iter_}')
+        print('---------------------------------------------------------------')
 
-    train_acc_mean = 0 # TODO
-    train_acc_std = 0 # TODO
-    test_acc_mean = 0 # TODO
-    test_acc_std = 0 # TODO
+    train_acc_mean = np.mean(train_acc_arr)
+    train_acc_std = np.std(train_acc_arr)
+    test_acc_mean = np.mean(test_acc_arr)
+    test_acc_std = np.std(test_acc_arr)
     print(f'On the train set: {train_acc_mean:.4f} +/- {train_acc_std:.4f}')
     print(f'On the test set: {test_acc_mean:.4f} +/- {test_acc_std:.4f}')
-    # TODO: print min and max accuracy as well
+    print(f'Training set: min_acc = {np.min(train_acc_arr):.4f}, max_acc = {np.max(train_acc_arr):.4f}')
+    print(f'Test set: min_acc = {np.min(test_acc_arr):.4f}, max_acc = {np.max(test_acc_arr):.4f}')
 
+    plt.plot(np.linspace(1, len(loss_curves[0]), len(loss_curves[0])), loss_curves[0])  # use 1st model: seed = 8
+    plt.title('loss curve (seed = 8)')
+    plt.xlabel('epochs')
+    plt.ylabel('loss')
+    plt.show()
 
-    # TODO: Confusion matrix and classification report (for one classifier that performs well)
-    print("Predicting on the test set")
-    # y_pred = 0 # TODO calculate predictions
-    # print(classification_report(y_test, y_pred)) 
-    # print(confusion_matrix(y_test, y_pred, labels=range(10)))
+    print("Predicting on the test set (using 1st model: seed = 8)")
+    print(confusion_matrix(y_test, test_predictions[0], labels=range(10)))
+    print(classification_report(y_test, test_predictions[0], labels=range(10)))
+
+    print('xyx')
 
 
 def perform_grid_search(features, targets):
@@ -115,12 +162,23 @@ def perform_grid_search(features, targets):
     :return:
     """
     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=33)
-    parameters = None # TODO create a dictionary of params
+    param_grid = {
+        "alpha": [0.0, 0.001, 1.0],
+        "activation": ['identity', 'logistic', 'relu'],
+        "solver": ['lbfgs', 'adam'],
+        "hidden_layer_sizes": [100, 200]
+    }
 
-    # nn = # TODO create an instance of MLPClassifier. Do not forget to set parameters as specified in the HW2 sheet.
-    # grid_search = # TODO create an instance of GridSearchCV from sklearn.model_selection (already imported) with
-    # appropriate params. Set: n_jobs=-1, this is another parameter of GridSearchCV, in order to get faster execution of the code.
+    mlp = MLPClassifier(max_iter=500, random_state=0, early_stopping=True)
 
-    # TODO call fit on the train data
-    # TODO print the best score
-    # TODO print the best parameters found by grid_search
+    grid_search = GridSearchCV(mlp, param_grid, n_jobs=-1, scoring='accuracy')
+    grid_search.fit(X_train, y_train)
+
+    scores = grid_search.cv_results_
+    best_params = grid_search.best_params_
+    best_score = grid_search.best_score_
+    test_score = grid_search.best_estimator_.score(X_test, y_test)
+
+    print(f'The best score is {best_score}.')
+    print(f'The best parameters found by GridSearchCV are {best_params}.')
+    print(f'The accuracy score on the test set using the best estimator is {test_score}.')
