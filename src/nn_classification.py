@@ -5,13 +5,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.model_selection import GridSearchCV
-import warnings
 
 
 RANDOM_STATE = 42
-
-
-warnings.filterwarnings("ignore")
 
 
 def reduce_dimension(features, n_components):
@@ -146,8 +142,6 @@ def train_nn_with_different_seeds(features, targets):
     print("Predicting on the test set (using 1st model: seed = 8)")
     print(confusion_matrix(y_test, test_predictions[0], labels=range(10)))
     print(classification_report(y_test, test_predictions[0], labels=range(10)))
-
-    print('xyx')
 
 
 def perform_grid_search(features, targets):
