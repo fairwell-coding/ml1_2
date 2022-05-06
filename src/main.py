@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from nn_classification import reduce_dimension, train_nn, train_nn_with_regularization, train_nn_with_different_seeds, \
     perform_grid_search
-from nn_regression import solve_regression_task
+from nn_regression import solve_regression_task, calculate_mse
 
 
 def task_1_and_2():
@@ -12,7 +12,7 @@ def task_1_and_2():
     targets = np.load('data/targets.npy')
     print(f'Shapes: {features.shape}, {targets.shape}')
 
-    # __print_images(features)
+    __print_images(features)
 
     features = features.reshape((features.shape[0], -1))
     print(features.shape)
@@ -26,15 +26,15 @@ def task_1_and_2():
 
     # Task 1.2
     print("----- Task 1.1 -----")
-    # train_nn(X_reduced, targets)
+    train_nn(X_reduced, targets)
 
     # Task 1.3
     print("----- Task 1.3 -----")
-    # train_nn_with_regularization(X_reduced, targets)
+    train_nn_with_regularization(X_reduced, targets)
 
     # Task 1.4
     print("----- Task 1.4 -----")
-    # train_nn_with_different_seeds(X_reduced, targets)
+    train_nn_with_different_seeds(X_reduced, targets)
 
     # Task 2 - Bonus task. Uncomment the function call if you decide to do this task.
     print("----- Task 2 -----")
@@ -52,14 +52,15 @@ def __print_images(features):
     plt.show()
 
 
-def task_3(): # Regression with NNs
+def task_3():  # Regression with NNs
 
     # Load 'data/x_datapoints.npy' and 'data/y_datapoints.npy' using np.load.
-    x_dataset = np.zeros((1000, 2)) # TODO
-    y_targets = np.zeros((1000,)) # TODO
+    x_dataset = np.load('data/x_datapoints.npy')
+    y_targets = np.load('data/y_datapoints.npy')
     print(f'Shapes: {x_dataset.shape}, {y_targets.shape}')
 
     solve_regression_task(x_dataset, y_targets)
+
 
 def main():
     task_1_and_2()
