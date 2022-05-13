@@ -20,9 +20,7 @@ def task_1_and_2():
     # PCA
     # Task 1.1.
     print("----- Task 1.1 -----")
-    n_components = 120  # reach at least 85% of the explained variance
-    X_reduced = reduce_dimension(features, n_components)
-    print(X_reduced.shape)
+    X_reduced = reduce_dimension(features, n_components=120)  # reach at least 85% of the explained variance
 
     # Task 1.2
     print("----- Task 1.1 -----")

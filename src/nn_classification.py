@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, validation_curve
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 from sklearn.model_selection import GridSearchCV
@@ -21,7 +21,10 @@ def reduce_dimension(features, n_components):
     X_reduced = pca.fit_transform(features)
 
     explained_var = np.sum(pca.explained_variance_ratio_)
+
     print(f'Explained variance: {explained_var}')
+    print(X_reduced.shape)
+
     return X_reduced
 
 
@@ -37,20 +40,34 @@ def train_nn(features, targets):
     X_train, X_test, y_train, y_test = train_test_split(features, targets, test_size=0.2, random_state=33)
 
     n_hidden_neurons = [5, 100, 200]
+    max_iter = 500
 
     for num_neurons in n_hidden_neurons:
         print(f'MLP - num of hidden neurons {num_neurons}:')
-        mlp = MLPClassifier(max_iter=500, random_state=0, hidden_layer_sizes=num_neurons)
+        mlp = MLPClassifier(max_iter=max_iter, random_state=0, hidden_layer_sizes=num_neurons)
         mlp.fit(X_train, y_train)
 
         train_acc = mlp.score(X_train, y_train)
         test_acc = mlp.score(X_test, y_test)
         loss = mlp.loss_
 
+        __check_for_overfitting(X_train, max_iter, num_neurons, y_train)
+
         print(f'Train accuracy: {train_acc:.4f}. Test accuracy: {test_acc:.4f}')
         print(f'Loss: {loss:.4f}')
         print(f'Num training epochs: {mlp.n_iter_}')
         print('---------------------------------------------------------------')
+
+
+def __check_for_overfitting(X_train, max_iter, num_neurons, y_train):
+    mlp_overfit = MLPClassifier(max_iter=500, random_state=0, hidden_layer_sizes=num_neurons, early_stopping=True)
+    mlp_overfit.fit(X_train, y_train)
+    val_scores = mlp_overfit.validation_scores_
+
+    if len(val_scores) < max_iter:
+        print(f'Model with {num_neurons} starts to overfit after {len(val_scores)} training epochs.')
+    else:
+        print(f'Model with {num_neurons} doesn\'t overfit.')
 
 
 def train_nn_with_regularization(features, targets):
@@ -139,9 +156,28 @@ def train_nn_with_different_seeds(features, targets):
     plt.ylabel('loss')
     plt.show()
 
+    cm = confusion_matrix(y_test, test_predictions[0], labels=range(10))
+    cr = classification_report(y_test, test_predictions[0], labels=range(10))
+
     print("Predicting on the test set (using 1st model: seed = 8)")
-    print(confusion_matrix(y_test, test_predictions[0], labels=range(10)))
-    print(classification_report(y_test, test_predictions[0], labels=range(10)))
+    print(cm)
+    print(cr)
+
+    # Find most misclassified image
+    misclassification_rates = []
+    for img_index in range(0, 10):
+        mask = np.ones(cm.shape[0], dtype=bool)
+        mask[img_index] = 0
+
+        FP = np.sum(cm[img_index, mask])
+        FN = np.sum(cm[mask, img_index])
+        incorrect_predictions = FP + FN  # false positive + false negative
+        total_predictions = np.sum(cm)
+
+        misclassification_rates.append(incorrect_predictions / total_predictions)
+
+    most_misclassified_image = np.argmax(misclassification_rates)
+    print(f'The most misclassified image has digit {most_misclassified_image}.')
 
 
 def perform_grid_search(features, targets):
